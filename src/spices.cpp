@@ -1,6 +1,9 @@
 #include <iostream>
 #include <fstream>
 #include <filesystem>
+#include <execution>
+#include <algorithm>
+#include <mutex>
 
 #ifdef _WIN32
 #include <io.h>
@@ -15,6 +18,14 @@
 #define IS_REDIRECTED true
 
 #endif
+
+std::mutex cerrMutex;
+
+#define CERRLOG(...) \
+	{ \
+		std::lock_guard lock(cerrMutex); \
+		fprintf(stderr, __VA_ARGS__); \
+	}
 
 #include "SharedIndex.hpp"
 #include "BucketedZstdData.hpp"
@@ -64,21 +75,31 @@ int main(int argc, char **argv) {
 	size_t totalEntries = 0;
 	if(auto id = sharedIndex.getID(datasetName)) {
 		std::cerr << "Found ID: " << id.value() << std::endl;
-		for(const auto &file : std::filesystem::directory_iterator(rootDirectory)) {
+
+
+		std::mutex outputMutex;
+		std::for_each(
+			std::execution::par,
+			std::filesystem::begin(std::filesystem::directory_iterator(rootDirectory)),
+			std::filesystem::end(std::filesystem::directory_iterator()),
+			[&totalEntries, &id, &outputMutex](const auto& file)
+			{
 			if(file.path().extension() == ".rda") {
-				std::cerr << "Reading: " << file.path() << "... " << std::flush;
 				std::ifstream fileStream(file.path(), std::ios::binary);
+				CERRLOG("Reading %s\n", std::string(file.path().filename()).c_str());
 				BucketedZstdData bucket(fileStream);
 
 				if(auto data = bucket.getEntriesByID(id.value()); data.has_value()) {
-					std::cerr << "Found " << data.value().size() << " entries" << std::endl;
 					totalEntries += data.value().size();
+					const std::lock_guard lock(outputMutex);
+					CERRLOG("Writing %s\n", std::string(file.path().filename()).c_str());
 					for(const auto &entry : data.value()) {
 						std::cout.write(entry.data(), entry.size()) << '\n';
 					}
 				}
 			}
-		}
+		});
+
 		std::cerr << "Found a total of " << totalEntries << " entries" << std::endl;
 	}
 }
