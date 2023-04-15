@@ -1,6 +1,9 @@
 project(spices2)
 
+cmake_minimum_required(VERSION 3.18)
+
 set(CMAKE_CXX_STANDARD 20)
 
-add_executable(spices src/spices.cpp src/SharedIndex.cpp src/BucketedZstdData.cpp)
-target_link_libraries(spices zstd)
+add_subdirectory(src/RdaReader)
+
+add_subdirectory(src/rdaExtractor)
