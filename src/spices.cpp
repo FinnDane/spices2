@@ -66,7 +66,7 @@ void processRDA(const std::filesystem::directory_entry &file, std::atomic_size_t
 
 int main(int argc, char **argv) {
 	if(argc != 3 && argc != 4) {
-		std::cerr << "usage: subreddit rootdirectory [force write to terminal(true | false)]" << std::endl;
+		std::cerr << "usage: datesetname rootdirectory [force write to terminal(true | false)]" << std::endl;
 		return 1;
 	}
 
