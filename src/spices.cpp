@@ -46,17 +46,20 @@ std::optional<std::vector<char>> readSharedIndex(const std::filesystem::path &fi
 
 void processRDA(const std::filesystem::directory_entry &file, std::atomic_size_t &totalEntries, uint64_t id, std::mutex &outputMutex) {
 	if(file.path().extension() == ".rda") {
+		std::string fileName(file.path().filename());
 		std::ifstream fileStream(file.path(), std::ios::binary);
-		CERRLOG("Reading %s\n", std::string(file.path().filename()).c_str());
+		CERRLOG("Reading %s\n", fileName.c_str());
 		BucketedZstdData bucket(fileStream);
 
 		if(std::optional<std::vector<std::vector<char>>> data = bucket.getEntriesByID(id)) {
 			totalEntries += data.value().size();
 			const std::lock_guard lock(outputMutex);
-			CERRLOG("Writing %s\n", std::string(file.path().filename()).c_str());
+			CERRLOG("Writing %s\n", fileName.c_str());
 			for(const auto &entry : data.value()) {
 				std::cout.write(entry.data(), entry.size()) << '\n';
 			}
+		} else {
+			CERRLOG("No entries found in %s\n", fileName.c_str());
 		}
 	}
 }

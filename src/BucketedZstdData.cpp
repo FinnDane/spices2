@@ -8,26 +8,26 @@
 constexpr int headerSize = sizeof(uint32_t);
 constexpr int indexEntrySize = sizeof(uint64_t)*2;
 
-BucketedZstdData::BucketedZstdData(std::ifstream &file) : file(file) {}
+BucketedZstdData::BucketedZstdData(std::istream &input) : input(input) {}
 
 std::optional<std::vector<char>> BucketedZstdData::getDatasetWithId(std::uint32_t id) {
-	file.seekg(0, std::ios::beg);
+	input.seekg(0, std::ios::beg);
 
 	uint32_t indexSize;
-	file.read((char *)&indexSize, sizeof(indexSize));
+	input.read((char *)&indexSize, sizeof(indexSize));
 	if(indexSize < id) return {};
 
 	//seek to index entry
-	file.seekg(sizeof(uint32_t) + indexEntrySize*id, std::ios::beg);
+	input.seekg(sizeof(uint32_t) + indexEntrySize*id, std::ios::beg);
 
 	uint64_t offset, length;
-	file.read((char *)&offset, sizeof(offset));
-	file.read((char *)&length, sizeof(length));
+	input.read((char *)&offset, sizeof(offset));
+	input.read((char *)&length, sizeof(length));
 	if(length == 0) return {};
 
-	file.seekg(offset + headerSize + indexSize * indexEntrySize, std::ios::beg);
+	input.seekg(offset + headerSize + indexSize * indexEntrySize, std::ios::beg);
 	std::vector<char> inBuf(length);
-	file.read(inBuf.data(), inBuf.size());
+	input.read(inBuf.data(), inBuf.size());
 
 	std::vector<char> output(ZSTD_getFrameContentSize(inBuf.data(), inBuf.size()));
 	if(!ZSTD_isError(ZSTD_decompress(output.data(), output.size(), inBuf.data(), inBuf.size()))) {
