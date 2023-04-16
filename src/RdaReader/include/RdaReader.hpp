@@ -15,25 +15,25 @@ class RdaReader {
 		const std::vector<char> &datasetName,
 		const std::vector<char> &sharedIndex,
 		const std::vector<std::istream *> &rdas,
-		std::ostream &output
+		const std::function<void(const char *s, size_t n)> output
 	);
 	size_t readDataset(
 		const std::vector<char> &datasetName,
 		const std::vector<char> &sharedIndex,
 		const std::vector<std::istream *> &rdas,
-		std::ostream &output,
+		const std::function<void(const char *s, size_t n)> output,
 		std::mutex &outputMutex
 	);
 
 	size_t readRda(
 		std::istream &rda,
 		uint64_t id,
-		std::ostream &output
+		const std::function<void(const char *s, size_t n)> output
 	);
 	size_t readRda(
 		std::istream &rda,
 		uint64_t id,
-		std::ostream &output,
+		const std::function<void(const char *s, size_t n)> output,
 		std::mutex &outputMutex
 	);
 	private:

@@ -17,7 +17,7 @@ RdaReader::RdaReader() : logger(nullptr) {}
 
 RdaReader::RdaReader(std::function<void(const std::string &)> logger) : logger(logger) {}
 
-size_t RdaReader::readRda(std::istream &rda, uint64_t id, std::ostream &output, std::mutex &outputMutex) {
+size_t RdaReader::readRda(std::istream &rda, uint64_t id, const std::function<void(const char *s, size_t n)> output, std::mutex &outputMutex) {
 	log("Reading an rda\n");
 	BucketedZstdData bucket(rda);
 
@@ -25,7 +25,8 @@ size_t RdaReader::readRda(std::istream &rda, uint64_t id, std::ostream &output, 
 		const std::lock_guard lock(outputMutex);
 		log("Writing " + std::to_string(data.value().size()) + " entries to output\n");
 		for(const auto &entry : data.value()) {
-			output.write(entry.data(), entry.size()) << '\n';
+			output(entry.data(), entry.size());
+			output("\n", 1);
 		}
 		log("Done writing entries\n");
 		return data.value().size();
@@ -34,7 +35,7 @@ size_t RdaReader::readRda(std::istream &rda, uint64_t id, std::ostream &output, 
 	return 0;
 }
 
-size_t RdaReader::readRda(std::istream &rda, uint64_t id, std::ostream &output) {
+size_t RdaReader::readRda(std::istream &rda, uint64_t id, const std::function<void(const char *s, size_t n)> output) {
 	std::mutex dummyMutex;
 	return readRda(rda, id, output, dummyMutex);
 }
@@ -49,7 +50,7 @@ std::optional<std::istream *> getVictimIfAvailable(std::vector<std::istream *> &
 	return {};
 }
 
-size_t RdaReader::readDataset(const std::vector<char> &datasetName, const std::vector<char> &sharedIndex, const std::vector<std::istream *> &rdas, std::ostream &output, std::mutex &outputMutex) {
+size_t RdaReader::readDataset(const std::vector<char> &datasetName, const std::vector<char> &sharedIndex, const std::vector<std::istream *> &rdas, const std::function<void(const char *s, size_t n)> output, std::mutex &outputMutex) {
 	log("Reading shared index... ");
 	SharedIndex sharedIndexReader(sharedIndex);
 
@@ -79,7 +80,7 @@ size_t RdaReader::readDataset(const std::vector<char> &datasetName, const std::v
 	return 0;
 }
 
-size_t RdaReader::readDataset(const std::vector<char> &datasetName, const std::vector<char> &sharedIndex, const std::vector<std::istream *> &rdas, std::ostream &output) {
+size_t RdaReader::readDataset(const std::vector<char> &datasetName, const std::vector<char> &sharedIndex, const std::vector<std::istream *> &rdas, const std::function<void(const char *s, size_t n)> output) {
 	std::mutex dummyMutex;
 	return readDataset(datasetName, sharedIndex, rdas, output, dummyMutex);
 }

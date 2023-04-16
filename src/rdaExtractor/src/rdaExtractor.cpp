@@ -72,7 +72,7 @@ int main(int argc, char **argv) {
 		rdaRefs.push_back(&stream);
 	}
 	RdaReader rdaReader(threadedLog);
-	if(size_t totalRead = rdaReader.readDataset(datasetName, sharedIndexData, rdaRefs, std::cout)) {
+	if(size_t totalRead = rdaReader.readDataset(datasetName, sharedIndexData, rdaRefs, [](const char *s, size_t n){std::cout.write(s, n);})) {
 		std::cerr << "Found a total of " << totalRead << " entries" << std::endl;
 	} else {
 		std::cerr << "Cannot find '" << argv[1] << "' in the shared index" << std::endl;
