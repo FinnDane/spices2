@@ -52,29 +52,6 @@ int main(int argc, char **argv) {
 	std::vector<char> datasetName(datesetString.begin(), datesetString.end());
 
 	const std::filesystem::path rootDirectory(argv[2]);
-	const std::filesystem::path sharedIndexPath(rootDirectory / "sharedindex.shi");
-
-	std::vector<char> sharedIndexData;
-	if(auto data = readSharedIndex(sharedIndexPath)) {
-		sharedIndexData = data.value();
-	} else {
-		std::cerr << "cannot find '" << sharedIndexPath << "'" << std::endl;
-		return 2;
-	}
-
-	std::vector<std::ifstream> rdasIfstreams;
-	for(const std::filesystem::directory_entry &file : std::filesystem::directory_iterator(rootDirectory)) {
-		if(file.path().extension() == ".rda") rdasIfstreams.emplace_back(std::ifstream(file.path(), std::ios::binary));
-	}
-
-	std::vector<std::istream *> rdaRefs;
-	for(std::ifstream &stream : rdasIfstreams) {
-		rdaRefs.push_back(&stream);
-	}
 	RdaReader rdaReader(threadedLog);
-	if(size_t totalRead = rdaReader.readDataset(datasetName, sharedIndexData, rdaRefs, [](const char *s, size_t n){std::cout.write(s, n);})) {
-		std::cerr << "Found a total of " << totalRead << " entries" << std::endl;
-	} else {
-		std::cerr << "Cannot find '" << argv[1] << "' in the shared index" << std::endl;
-	}
+	rdaReader.readDataset(datasetName, rootDirectory, [](const char *s, size_t n){std::cout.write(s, n);});
 }
